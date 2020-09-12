@@ -46,7 +46,7 @@ class GoBoard(object):
         """
         Creates a start state, an empty board with given size.
         """
-        self.curCondition = 'unknown'
+        self.curCondition = "unknown"
         self.size = size
         self.NS = size + 1
         self.WE = 1
@@ -62,6 +62,7 @@ class GoBoard(object):
         b = GoBoard(self.size)
         assert b.NS == self.NS
         assert b.WE == self.WE
+        b.curCondition = self.curCondition
         b.ko_recapture = self.ko_recapture
         b.last_move = self.last_move
         b.last2_move = self.last2_move
@@ -267,6 +268,45 @@ class GoBoard(object):
             point + self.NS - 1,
             point + self.NS + 1,
         ]
+
+    def gomuku_helper(self, curPos, count, visited, direction = -1):
+        if not curPos:
+            return count
+        if count >= 5:
+            return count
+        visited.append(curPos)
+        color = self.get_color(curPos)
+        neighbors = self._neighbors(curPos) + self._diag_neighbors(curPos)
+
+                
+        if direction >= 0:
+            nextPoint = neighbors[direction]
+            nextColor = self.get_color(nextPoint)
+            if nextColor == color:
+                count = self.gomuku_helper(nextPoint, count + 1, visited, direction)
+        else:
+            left, right, up, down, leftUp, rightUp, leftB, rightB = 0, 1, 2, 3, 4, 5, 6, 7
+            count_hor = count_ver = count_diag0 = count_diag1 = 1
+            if self.get_color(neighbors[left]) == color:
+                count_hor += self.gomuku_helper(neighbors[left], 1, visited, left)
+            if self.get_color(neighbors[right]) == color:
+                count_hor += self.gomuku_helper(neighbors[right], 1, visited, right)
+            if self.get_color(neighbors[up]) == color:
+                count_ver += self.gomuku_helper(neighbors[up], 1, visited, up)
+            if self.get_color(neighbors[down]) == color:
+                count_ver += self.gomuku_helper(neighbors[down], 1, visited, up)
+            if self.get_color(neighbors[leftUp]) == color:
+                count_diag0 += self.gomuku_helper(neighbors[leftUp], 1, visited, leftUp)
+            if self.get_color(neighbors[rightB]) == color:
+                count_diag0 += self.gomuku_helper(neighbors[rightB], 1, visited, rightB)
+            if self.get_color(neighbors[rightUp]) == color:
+                count_diag1 += self.gomuku_helper(neighbors[rightUp], 1, visited, rightUp)
+            if self.get_color(neighbors[leftB]) == color:
+                count_diag1 += self.gomuku_helper(neighbors[leftB], 1, visited, leftB)
+            count = max(count_hor, count_ver, count_diag0, count_diag1)
+
+
+        return count
 
     def last_board_moves(self):
         """

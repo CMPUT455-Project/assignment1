@@ -209,6 +209,15 @@ class GtpConnection:
 
     def gogui_rules_legal_moves_cmd(self, args):
         """ Implement this function for Assignment 1 """
+
+        lastMove = self.board.last_move
+        
+        count = self.board.gomuku_helper(lastMove, 1, [])
+
+        if count >= 5 or len(self.board.get_empty_points()) == 0:
+            self.respond("")
+            return
+
         moves = self.board.get_empty_points()
         gtp_moves = []
         for move in moves:
@@ -217,6 +226,7 @@ class GtpConnection:
         sorted_moves = " ".join(sorted(gtp_moves)).lower()
         self.respond(sorted_moves)
         return
+
 
     def gogui_rules_side_to_move_cmd(self, args):
         """ We already implemented this function for Assignment 1 """
@@ -242,12 +252,29 @@ class GtpConnection:
                     assert False
             str += '\n'
         self.respond(str)
-            
+
     def gogui_rules_final_result_cmd(self, args):
         """ Implement this function for Assignment 1 """
         # Todo: add win,lose,draw judge
-        self.respond(self.board)
+        move = self.board.last_move
         
+        count = self.board.gomuku_helper(move, 1, [])        
+
+        if count >= 5:
+            color = self.board.get_color(move)
+            if color == 1:
+                self.respond("black")
+            elif color == 2:
+                self.respond("white")
+            else:
+                raise ValueError("Wrong color while checking wining! bad color input")
+        else:
+            if len(self.board.get_empty_points()) == 0:
+                self.respond("draw")
+            else:
+                self.respond("unknown")
+        return
+
 
     def play_cmd(self, args):
         """ Modify this function for Assignment 1 """
@@ -296,10 +323,12 @@ class GtpConnection:
         move = self.go_engine.get_move(self.board, color)
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord).lower()
-        winCondition = ['white', 'black']
-        if self.board.curCondition in winCondition:
+
+        count = self.board.gomuku_helper(move, 1, [])
+
+        if count >= 5:
             self.respond("resign")
-        elif self.board.curCondition == 'draw':
+        elif len(self.board.get_empty_points()) == 0:
             self.respond("pass") 
         elif self.board.is_legal(move, color):
             self.board.play_move(move, color)
@@ -342,6 +371,7 @@ class GtpConnection:
         """
         List legal moves for color args[0] in {'b','w'}
         """
+
         board_color = args[0].lower()
         color = color_to_int(board_color)
         moves = GoBoardUtil.generate_legal_moves(self.board, color)
